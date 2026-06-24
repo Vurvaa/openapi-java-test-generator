@@ -32,6 +32,7 @@ public class ParserService {
         OpenAPIV3Parser parser = new OpenAPIV3Parser();
         ParseOptions parseOptions = new ParseOptions();
         parseOptions.setResolve(true);
+        parseOptions.setResolveFully(true);
         SwaggerParseResult result = parser.readContents(openApiText, null, parseOptions);
 
         if(result.getMessages() != null && !result.getMessages().isEmpty()){
@@ -66,6 +67,7 @@ public class ParserService {
             for (Map.Entry<PathItem.HttpMethod, Operation> operationEntry : operationsMap.entrySet()) {
                 String method = operationEntry.getKey().name().toLowerCase();
                 Operation operation = operationEntry.getValue();
+
                 if (!SUPPORTED_METHODS.contains(method) || operation == null) {
                     continue;
                 }
@@ -75,6 +77,7 @@ public class ParserService {
                         operation.getOperationId(),
                         operation.getSummary(),
                         operation.getTags() != null ? operation.getTags() : List.of(),
+                        operation.getParameters() != null ? operation.getParameters() : List.of(),
                         operation.getRequestBody(),
                         operation.getResponses()
                 );
