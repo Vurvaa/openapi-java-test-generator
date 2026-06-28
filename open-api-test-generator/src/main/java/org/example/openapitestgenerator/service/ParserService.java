@@ -76,6 +76,7 @@ public class ParserService {
                         method.toUpperCase(),
                         operation.getOperationId(),
                         operation.getSummary(),
+                        operation.getSecurity() != null ? operation.getSecurity() : List.of(),
                         operation.getTags() != null ? operation.getTags() : List.of(),
                         operation.getParameters() != null ? operation.getParameters() : List.of(),
                         operation.getRequestBody(),
