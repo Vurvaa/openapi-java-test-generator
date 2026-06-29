@@ -5,34 +5,14 @@ output:
   save-llm-input: false
   dir: "output"
 
-# Основной репозиторий с OpenAPI-контрактами.
-git:
-  access-token: "access-token"
-  default-repo-url: "default-repo-url"
-  default-branch: "main"
-
-  # Репозиторий, в который коммитятся сгенерированные Postman-коллекции.
-  postman-collections:
-    access-token: "access-token"
-    default-repo-url: "default-repo-url"
-    default-branch: "main"
-
-# AI-модели для генерации тест-кейсов.
-models:
-  model1:
-    name: "Человекочитаемое имя в UI"
-    api-key: "api-key"
-    base-url: "base-url"
-    model-name: "model-name"
-    temperature: 0.7
-    enabled: true
-
-# Логирование.
-log-path: "logs/app.log"
-log-level: "INFO"
+model:
+  name: "Qwen 3.6"
+  base-url: "http://10.8.0.11:1234"
+  model-name: "qwen/qwen3.6-35b-a3"
+  temperature: 0.7
 
 # Промпты, которые отправляются в LLM.
 start-text:
   api-swagger: "Тут будет промпт, который принимает распарсенный Swagger-контракт и генерирует по нему тест-кейсы"
-  formater: "Тут будет промпт для форматирования вывода"
-  system-prompt: "Тут будет системный промпт для генерации Postman-коллекции"
+  postman-prompt: "Тут будет системный промпт для генерации Postman-коллекции"
+  selenium-prompt: "Тут будет системный промпт для генерации selenium"
