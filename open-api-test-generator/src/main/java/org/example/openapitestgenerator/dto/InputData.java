@@ -1,3 +1,24 @@
 package org.example.openapitestgenerator.dto;
 
-public record InputData(String username, String email) {}
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class InputData
+{
+    private final Map<String, String> params = new HashMap<>();
+
+    @JsonAnySetter
+    public void add(String key, String value)
+    {
+        params.put(key, value);
+    }
+
+    @JsonValue
+    public Map<String, String> getParams()
+    {
+        return params;
+    }
+}
