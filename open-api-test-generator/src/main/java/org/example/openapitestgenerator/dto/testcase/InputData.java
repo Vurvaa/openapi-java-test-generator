@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.dto;
+package org.example.openapitestgenerator.dto.testcase;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonValue;

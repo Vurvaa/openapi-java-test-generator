@@ -1,8 +1,8 @@
 package org.example.openapitestgenerator.infrastructure;
 
-import org.example.openapitestgenerator.dto.Config;
-import org.example.openapitestgenerator.dto.LlmRequest;
-import org.example.openapitestgenerator.dto.Message;
+import org.example.openapitestgenerator.dto.config.Config;
+import org.example.openapitestgenerator.dto.llmrequest.LlmRequest;
+import org.example.openapitestgenerator.dto.llmrequest.MessageToLlm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -24,14 +24,14 @@ public class LlmClient
     {
         this.config = config;
 
-        log.info("Создаем rest клиент");
+        log.info("Creating a REST client");
 
          this.restClient = RestClient.builder().baseUrl(config.model().baseUrl())
                 .requestFactory(new SimpleClientHttpRequestFactory())
                 .build();
     }
 
-    public String generateResponse(List<Message> messages)
+    public String generateResponse(List<MessageToLlm> messages)
     {
         final String name = config.model().name();
         final String modelName = config.model().modelName();
@@ -40,7 +40,7 @@ public class LlmClient
 
         LlmRequest requestBody = new LlmRequest(modelName, messages, temperature);
 
-        log.info("Отправка запроса в модель {}", name);
+        log.info("Sending a request to the model {}", name);
         log.debug("Запрос: {}", requestBody);
 
         try
@@ -51,14 +51,14 @@ public class LlmClient
                     .retrieve()
                     .body(String.class);
 
-            log.info("Ответ получен");
+            log.info("Response received");
 
             return response;
         }
         catch (RestClientException e)
         {
-            log.error("Ошибка при обращении к LLM. Ответ не получен", e);
-            throw new RuntimeException("Ошибка при обращении к LLM. Ответ не получен", e);
+            log.error("Error contacting the LLM. No response received.", e);
+            throw new RuntimeException("Error contacting the LLM. No response received.", e);
         }
     }
 }
