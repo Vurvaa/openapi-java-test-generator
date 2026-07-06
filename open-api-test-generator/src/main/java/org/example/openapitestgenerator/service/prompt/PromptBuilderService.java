@@ -106,4 +106,8 @@ public class PromptBuilderService {
             throw new PromptBuildingException("Error building prompt: " + e.getMessage());
         }
     }
+
+    public String getSystemPrompt() {
+        return SYSTEM_PROMPT;
+    }
 }
