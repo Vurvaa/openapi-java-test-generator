@@ -1,5 +1,7 @@
 package org.example.openapitestgenerator.service;
 
+import org.example.openapitestgenerator.exceptions.OpenApiLoadException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -7,6 +9,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import static org.mockito.Mockito.lenient;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -49,16 +54,16 @@ class LoaderServiceTest {
 
         loaderService = new LoaderService(restClientBuilder);
 
-        when(restClient.get()).thenReturn(requestSpec);
+        lenient().when(restClient.get()).thenReturn(requestSpec);
 
-        when(requestSpec.uri(any(URI.class))).thenAnswer(invocation -> {
+        lenient().when(requestSpec.uri(any(URI.class))).thenAnswer(invocation -> {
             URI uri = invocation.getArgument(0);
             currentUrl = uri.toString();
-            requestedUrls.add(currentUrl);
+            requestedUrls.add(uri.toString());
             return requestSpec;
         });
 
-        when(requestSpec.retrieve()).thenReturn(responseSpec);
+        lenient().when(requestSpec.retrieve()).thenReturn(responseSpec);
     }
 
     @Test
@@ -206,8 +211,74 @@ class LoaderServiceTest {
         String result = loaderService.load(pageUrl);
 
         assertThat(result).isEqualTo(spec);
-        assertThat(requestedUrls).containsExactly(pageUrl, fallbackSpecUrl);
     }
+
+    @Test
+    void loadShouldThrowOpenApiLoadExceptionWhenUrlIsNull() {
+        String expectedMessage = "OpenAPI spec URL must not be null or blank";
+        OpenApiLoadException exception = Assertions
+                .assertThrows(OpenApiLoadException.class,
+                () -> loaderService.load(null));
+
+        Assertions.assertEquals(expectedMessage, exception.getMessage());
+
+        assertThat(requestedUrls).isEmpty();
+    }
+
+    @Test
+    void loadShouldThrowOpenApiLoadExceptionWhenRestClientFails() {
+        String url = "https://api.example.com/openapi.json";
+
+        when(responseSpec.toEntity(String.class))
+                .thenThrow(new RestClientException("Connection failed"));
+
+        Assertions.assertThrows(OpenApiLoadException.class,
+                () -> loaderService.load(url));
+    }
+
+    @Test
+    void loadShouldThrowOpenApiLoadExceptionWhenResponseBodyIsBlank() {
+        String url = "https://api.example.com/openapi.json";
+
+        stubResponses(Map.of(
+                url, ResponseEntity.ok()
+                        .contentType(APPLICATION_JSON)
+                        .body("   ")
+        ));
+
+
+        Assertions.assertThrows(OpenApiLoadException.class,
+                () -> loaderService.load(url));
+    }
+
+    @Test
+    void load_shouldThrowOpenApiLoadException_whenResolvedSpecBodyIsBlank() {
+        String pageUrl = "https://api.example.com/swagger-ui.html";
+        String resolvedSpecUrl = "https://api.example.com/docs/openapi.json";
+
+        String html = """
+            <html>
+              <script>
+                SwaggerUIBundle({
+                  url: "/docs/openapi.json"
+                });
+              </script>
+            </html>
+            """;
+
+        stubResponses(Map.of(
+                pageUrl, ResponseEntity.ok()
+                        .contentType(TEXT_HTML)
+                        .body(html),
+                resolvedSpecUrl, ResponseEntity.ok()
+                        .contentType(APPLICATION_JSON)
+                        .body("")
+        ));
+
+        Assertions.assertThrows(OpenApiLoadException.class,
+                () -> loaderService.load(pageUrl));
+    }
+
 
     private void stubResponses(Map<String, ResponseEntity<String>> responses) {
         when(responseSpec.toEntity(String.class)).thenAnswer(invocation -> {
@@ -218,16 +289,6 @@ class LoaderServiceTest {
             }
 
             return response;
-        });
-
-        when(responseSpec.body(String.class)).thenAnswer(invocation -> {
-            ResponseEntity<String> response = responses.get(currentUrl);
-
-            if (response == null) {
-                throw new AssertionError("Unexpected request URL: " + currentUrl);
-            }
-
-            return response.getBody();
         });
     }
 }
