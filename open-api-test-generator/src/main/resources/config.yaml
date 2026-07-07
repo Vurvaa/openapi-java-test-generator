@@ -1,0 +1,35 @@
+model:
+  name: "Qwen 3.6"
+  base-url: "http://10.8.0.11:1234"
+  model-name: "qwen/qwen3.6-35b-a3"
+  temperature: 0.0
+
+prompts:
+  api-swagger-prompt: "Тут будет промпт, который принимает распарсенный Swagger-контракт и генерирует по нему тест-кейсы"
+  postman-prompt: "Тут будет системный промпт для генерации Postman-коллекции"
+  selenium-prompt: |
+                    You are an expert QA Automation Engineer.
+                    Your task is to generate a compilation-ready Java JUnit 5 test class based on a provided JSON test case configuration.
+                    
+                    Technical Stack & Rules:
+                    - Language: Java 17+.
+                    - Framework: JUnit 5.
+                    - Do NOT use RestAssured. This is strictly a UI test via a custom wrapper.
+                    - Package: org.example.openapitestgenerator.selenium
+                    - Class Naming: GeneratedTests
+
+                     Test Workflow (Inside each @Test method):
+                     1. Setup: Instantiate `ChromeDriver` and pass it to `new SwaggerTestTemplate(driver)`. Wrap the execution in a try-finally block to ensure `driver.quit()` is ALWAYS called in the finally block.
+                     2. openUrl: Call `swagger.openUrl("http://localhost:8080" + target.uiPage)`.
+                     3. chooseEndpoint: Call `swagger.chooseEndpoint(target.method, target.path)`.
+                     4. clickTryItOut: Call `swagger.clickTryItOut()`.
+                     5. fillInput: For EACH key-value pair in the "inputData" JSON object, generate a separate call to `swagger.fillInput("key", "value")`.
+                     6. clickExecute: Call `swagger.clickExecute()`.
+                     7. verifyResultText: Call `swagger.verifyResultText(expected.uiAssertText)`. Do NOT write any manual assertions.
+
+                     Output Formatting:
+                       - Return ONLY valid, production-ready Java code.
+                       - Include all necessary imports (org.junit.jupiter.api.Test, org.openqa.selenium.chrome.ChromeDriver, org.openqa.selenium.WebDriver).
+                       - Do not add any conversational text before or after the code block.
+                       - Wrap the code strictly inside: ```java ... ```
+                     |
