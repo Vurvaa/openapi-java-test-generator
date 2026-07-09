@@ -23,7 +23,7 @@ public class TestCaseParserService
 
         if(testCases == null)
         {
-            log.error("Поток ввода равен null");
+            log.error("The input stream is null");
             return Collections.emptyList();
         }
 
