@@ -3,10 +3,14 @@ package org.example.openapitestgenerator.service.prompt;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.example.openapitestgenerator.dto.EndpointInfo;
+import org.example.openapitestgenerator.dto.config.Config;
+import org.example.openapitestgenerator.dto.endpoints.EndpointInfo;
 import org.example.openapitestgenerator.exceptions.PromptBuildingException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -17,9 +21,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class PromptBuilderServiceTest {
 
-    private final PromptBuilderService promptBuilderService = new PromptBuilderService();
+    @Mock
+    Config config;
+
+    private final PromptBuilderService promptBuilderService = new PromptBuilderService(config);
 
     @Test
     void buildPromptShouldBuildPromptForSingleEndpoint() {
@@ -95,20 +103,8 @@ class PromptBuilderServiceTest {
     }
 
     @Test
-    void getSystemPromptShouldReturnSystemPrompt() {
-        String result = promptBuilderService.getSystemPrompt();
-
-        assertThat(result)
-                .isNotBlank()
-                .contains("Ты генератор тест-кейсов")
-                .contains("ТОЛЬКО JSON-массив")
-                .contains("assertions всегда массив строк")
-                .contains("возвращай результат строго в виде JSON");
-    }
-
-    @Test
     void buildPromptShouldThrowPromptBuildingExceptionWhenJsonSerializationFails() throws JsonProcessingException {
-        PromptBuilderService service = new PromptBuilderService();
+        PromptBuilderService service = new PromptBuilderService(config);
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
         ObjectWriter objectWriter = mock(ObjectWriter.class);

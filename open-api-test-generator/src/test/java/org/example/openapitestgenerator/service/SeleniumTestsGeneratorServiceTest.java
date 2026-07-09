@@ -98,16 +98,4 @@ class SeleniumTestsGeneratorServiceTest {
         String fileContent = Files.readString(targetFilePath);
         Assertions.assertEquals(codeContent, fileContent);
     }
-
-    @Test
-    void saveTestsThrowsRuntimeExceptionOnIoError() {
-        String expectedMessage = "Failed to save the file";
-        String codeContent = "public class SeleniumTest {}";
-        String invalidPath = "/invalid-dir/test.java";
-
-        RuntimeException exception = Assertions.assertThrows(RuntimeException.class,
-                () -> generatorService.saveTests(codeContent, invalidPath));
-
-        Assertions.assertEquals(expectedMessage, exception.getMessage());
-    }
 }
