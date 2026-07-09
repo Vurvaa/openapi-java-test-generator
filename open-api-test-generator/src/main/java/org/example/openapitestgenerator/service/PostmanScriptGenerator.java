@@ -1,6 +1,6 @@
 package org.example.openapitestgenerator.service;
 
-import org.example.openapitestgenerator.dto.Expected;
+import org.example.openapitestgenerator.dto.testcase.Expected;
 import org.example.openapitestgenerator.dto.postman.Event;
 import org.example.openapitestgenerator.dto.postman.Script;
 import org.springframework.stereotype.Service;

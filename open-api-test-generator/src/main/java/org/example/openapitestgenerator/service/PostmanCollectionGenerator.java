@@ -1,13 +1,17 @@
 package org.example.openapitestgenerator.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.openapitestgenerator.dto.TestCase;
+import tools.jackson.databind.ObjectMapper;
+import org.example.openapitestgenerator.dto.config.Config;
+import org.example.openapitestgenerator.dto.llmrequest.MessageToLlm;
+import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
+import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.example.openapitestgenerator.dto.postman.*;
+import org.example.openapitestgenerator.infrastructure.LlmClient;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 @Service
@@ -23,22 +27,29 @@ public class PostmanCollectionGenerator {
     private static final String RAW_BODY_MODE = "raw";
 
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final PostmanScriptGenerator scriptGenerator;
+    private final LlmClient llmClient;
+    private final Config config;
+    private final LlmResponseParserService llmResponseParserService;
 
-    public PostmanCollectionGenerator(ObjectMapper objectMapper, PostmanScriptGenerator scriptGenerator) {
-        this.objectMapper = objectMapper;
+    public PostmanCollectionGenerator(PostmanScriptGenerator scriptGenerator, LlmClient llmClient,
+                                      Config config, LlmResponseParserService llmResponseParserService) {
         this.scriptGenerator = scriptGenerator;
+        this.llmClient = llmClient;
+        this.config = config;
+        this.llmResponseParserService = llmResponseParserService;
     }
 
-    public PostmanCollection generate(List<TestCase> testCases) {
+    public String generate(List<TestCase> testCases) {
         Info info = new Info(COLLECTION_NAME, POSTMAN_SCHEMA);
 
         List<Item> items = testCases.stream()
                 .map(this::toItem)
                 .toList();
 
-        return new PostmanCollection(info, items);
+        PostmanCollection collection = new PostmanCollection(info, items);
+        return objectMapper.writeValueAsString(collection);
     }
 
     private Item toItem(TestCase testCase) {
@@ -67,12 +78,8 @@ public class PostmanCollectionGenerator {
             return null;
         }
 
-        try {
-            String rawJson = objectMapper.writeValueAsString(testCase.inputData());
-            return new Body(RAW_BODY_MODE, rawJson);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Не удалось сериализовать inputData в JSON", e);
-        }
+        String rawJson = objectMapper.writeValueAsString(testCase.inputData());
+        return new Body(RAW_BODY_MODE, rawJson);
     }
 
     private Url toUrl(String path) {
@@ -95,12 +102,57 @@ public class PostmanCollectionGenerator {
     }
 
 
-    public void save(PostmanCollection collection, File file) {
-        try {
-            objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(file, collection);
-        } catch (IOException e) {
-            throw new IllegalStateException("Не удалось сохранить Postman collection", e);
+    public void save(String llmResponse, String outputPath)
+    {
+        Path path = Path.of(outputPath);
+
+        try
+        {
+            Path parentDir = path.getParent();
+
+            if (parentDir != null)
+            {
+                Files.createDirectories(parentDir);
+            }
+
+            Files.writeString(path, llmResponse);
+
         }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed to save the file", e);
+        }
+    }
+
+    public void startNewman()
+    {
+        try
+        {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command("cmd.exe", "/c", "newman", "run", "src/main/resources/collection.json", "--global-var", "baseUrl=http://localhost:80", "--ignore-redirects");
+            processBuilder.inheritIO();
+            processBuilder.start();
+        }
+        catch (Exception e)
+        {
+            System.out.println("Не удалось запустить Newman");
+        }
+    }
+
+    public String generateParams(String collection)
+    {
+        String userPrompt = """
+                Here is the raw Postman collection JSON file generated from the OpenAPI spec.\s
+                Please find all path parameters inside curly braces and replace them with valid test data according to the rules:
+                
+                %s
+                """.formatted(collection);
+
+        String systemPrompt = config.prompts().postmanDataFixerPrompt();
+        List<MessageToLlm> messages = List.of(new MessageToLlm("system", systemPrompt), new MessageToLlm("user", userPrompt));
+        String rawLlmResponse = llmClient.generateResponse(messages);
+        LlmResponse llmResponse;
+        llmResponse = objectMapper.readValue(rawLlmResponse, LlmResponse.class);
+        return llmResponseParserService.parse(llmResponse);
     }
 }
