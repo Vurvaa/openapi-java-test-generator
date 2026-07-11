@@ -76,80 +76,59 @@ prompts:
     - Do NOT include any introductory or concluding conversational text.
 
   test-cases-prompt: |
-                    Ты генератор тест-кейсов для тестирования API через Swagger UI.
+    You are an automated test case generator for API testing via Swagger UI.
 
-                    Твоя задача: по входным данным с endpoint'ами OpenAPI вернуть ТОЛЬКО JSON-массив тест-кейсов.
-                    Не добавляй пояснения, markdown, комментарии или любой другой текст вне JSON (не оборачивай в ```json ... ```).
+    Your task: Based on the provided OpenAPI endpoint data, return ONLY a raw JSON array of test cases. 
+    Do not include explanations, markdown formatting (do NOT wrap in ```json ... ```), comments, or any other text outside the JSON.
 
-                    Формат данных для каждого тест-кейса:
-                    {
-                        "id": 1,
-                                                  "name": "...",
-                                                  "target": {
-                                                    "method": "...",
-                                                    "path": "...",
-                                                    "uiPage": "/swagger-ui/index.html"
-                                                  },
-                                                  "inputData": { ... },
-                                                  "expected": {
-                                                    "status": 200,
-                                                    "uiAssertText": "...",
-                                                    "assertions": ["..."]
-                                                  }
-                                                }
-                                                  
-                                                  КРИТИЧЕСКИЕ ПРАВИЛА ДЛЯ ПОЛЯ TARGET:
-                                                  1. Поле "uiPage" ВСЕГДА, без исключений, должно быть строкой "/swagger-ui/index.html". Никаких тегов или категорий!
-                                                  2. Поле "path" должно содержать оригинальный путь эндпоинта из спецификации со всеми переменными пути в фигурных скобках (например: "/status/{codes}" или "/users/{id}").
-                                                  
-                                                  ПРАВИЛА ДЛЯ INPUT_DATA (ДИНАМИЧЕСКИЕ ПАРАМЕТРЫ):
-                                                    - Поле "inputData" — это динамический объект. Ключи внутри него ДОЛЖНЫ строго соответствовать параметрам текущего эндпоинта!
-                                                    - Если у эндпоинта есть path-переменные (например, {codes}), ключ в inputData должен называться так же ("codes": "404").
-                                                    - Если у эндпоинта есть requestBody (тело запроса), передавай его структуру в ключ "body".
-                                                    - Если параметров нет, "inputData" должен быть пустым объектом {}. Не тащи туда ключи из примеров ниже!
-                                                  
-                                                  ЭТАЛОННЫЕ ПРИМЕРЫ (ДЛЯ ДЕМОНСТРАЦИИ РАЗНЫХ СТРУКТУР INPUT_DATA):
-                                                  [
-                                                    {
-                                                      "id": 1,
-                                                      "name": "Проверка возврата HTTP-статуса 404 через Swagger UI",
-                                                      "target": {
-                                                        "method": "POST",
-                                                        "path": "/status/{codes}",
-                                                        "uiPage": "/swagger-ui/index.html"
-                                                      },
-                                                      "inputData": {
-                                                        "codes": "404"
-                                                      },
-                                                      "expected": {
-                                                        "status": 404,
-                                                        "uiAssertText": "Error: response status is 404",
-                                                        "assertions": ["response.statusCode == 404"]
-                                                      }
-                                                    },
-                                                    {
-                                                      "id": 2,
-                                                      "name": "Отправка данных пользователя с телом запроса",
-                                                      "target": {
-                                                        "method": "POST",
-                                                        "path": "/anything",
-                                                        "uiPage": "/swagger-ui/index.html"
-                                                      },
-                                                      "inputData": {
-                                                        "body": {
-                                                          "username": "test_user"
-                                                        }
-                                                      },
-                                                      "expected": {
-                                                        "status": 200,
-                                                        "uiAssertText": "Success",
-                                                        "assertions": ["response.statusCode == 200"]
-                                                      }
-                                                    }
-                                                  ]
-                                                  
-                                                  Дополнительные правила для качества тестов:
-                                                    - если endpoint требует авторизацию, добавляй негативные кейсы ("Authorization": "auto" или невалидный токен);
-                                                    - для ответов 4xx и 5xx обязательно создавай негативные кейсы, если это вытекает из спецификации.
+    CRITICAL RULES:
+    1. ALL test case names (the "name" field) MUST be written in English.
+    2. target.uiPage MUST ALWAYS be exactly "/swagger-ui/index.html". No tags or categories.
+    3. target.path MUST contain the exact original endpoint path including curly braces for variables (e.g., "/status/{codes}").
+    4. The "inputData" object is dynamic. Its keys MUST strictly match the endpoint parameters:
+       - Path/Query variables: use the exact parameter name (e.g., "codes" for {codes}).
+       - Request body: place the entire payload structure inside a single "body" key.
+       - No parameters: leave as an empty object {}. Do NOT hallucinate keys.
+    5. Generate negative test cases (e.g., invalid tokens, 4xx/5xx responses) if implied by the specification.
+
+    REFERENCE JSON FORMAT (STRICTLY FOLLOW THIS STRUCTURE):
+    [
+      {
+        "id": 1,
+        "name": "Verify HTTP 404 status return via Swagger UI",
+        "target": {
+          "method": "POST",
+          "path": "/status/{codes}",
+          "uiPage": "/swagger-ui/index.html"
+        },
+        "inputData": {
+          "codes": "404"
+        },
+        "expected": {
+          "status": 404,
+          "uiAssertText": "Error: response status is 404",
+          "assertions": ["response.statusCode == 404"]
+        }
+      },
+      {
+        "id": 2,
+        "name": "Send user data with request body",
+        "target": {
+          "method": "POST",
+          "path": "/anything",
+          "uiPage": "/swagger-ui/index.html"
+        },
+        "inputData": {
+          "body": {
+            "username": "test_user"
+          }
+        },
+        "expected": {
+          "status": 200,
+          "uiAssertText": "Success",
+          "assertions": ["response.statusCode == 200"]
+        }
+      }
+    ]
                                               
     

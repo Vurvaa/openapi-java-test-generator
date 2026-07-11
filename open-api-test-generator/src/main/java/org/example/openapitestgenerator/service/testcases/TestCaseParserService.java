@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.testcases;
 
 import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.slf4j.Logger;

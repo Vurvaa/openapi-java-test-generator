@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.llmresponse;
 
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.springframework.stereotype.Service;

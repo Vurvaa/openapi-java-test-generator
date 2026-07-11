@@ -13,7 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class PromptBuilderService {
+public class TestCasesPromptBuilderService
+{
     private final ObjectMapper objectMapper;
     private final Config config;
 
@@ -34,7 +35,7 @@ public class PromptBuilderService {
                         - устанавливай target.uiPage строго в "/swagger-ui/index.html".
                         """;
 
-    public PromptBuilderService(Config config) {
+    public TestCasesPromptBuilderService(Config config) {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

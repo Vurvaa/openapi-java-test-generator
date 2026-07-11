@@ -1,10 +1,11 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.testcases;
 
 import org.example.openapitestgenerator.dto.llmrequest.MessageToLlm;
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.example.openapitestgenerator.infrastructure.LlmClient;
-import org.example.openapitestgenerator.service.prompt.PromptBuilderService;
+import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
+import org.example.openapitestgenerator.service.prompt.TestCasesPromptBuilderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,19 +15,18 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 @Service
 public class TestCasesGeneratorService
 {
-    private final PromptBuilderService promptBuilderService;
+    private final TestCasesPromptBuilderService promptBuilderService;
     private final LlmClient llmClient;
     private static final Logger log = LoggerFactory.getLogger(TestCasesGeneratorService.class);
     private final ObjectMapper mapper;
     private final LlmResponseParserService llmResponseParserService;
 
-    TestCasesGeneratorService(PromptBuilderService promptBuilderService, LlmClient llmClient,
+    TestCasesGeneratorService(TestCasesPromptBuilderService promptBuilderService, LlmClient llmClient,
                               LlmResponseParserService llmResponseParserService, ObjectMapper mapper)
     {
         this.promptBuilderService = promptBuilderService;
@@ -35,7 +35,7 @@ public class TestCasesGeneratorService
         this.mapper = mapper;
     }
 
-    public void generateTestCases(String userPrompt)
+    public String generateTestCases(String userPrompt)
     {
         String systemPrompt = promptBuilderService.getSystemPrompt();
         List<MessageToLlm> messages = List.of(new MessageToLlm("system", systemPrompt), new MessageToLlm("user", userPrompt));
@@ -43,10 +43,9 @@ public class TestCasesGeneratorService
         LlmResponse llmResponse = mapper.readValue(rawLlmResponse, LlmResponse.class);
         String processedResponse = llmResponseParserService.parse(llmResponse);
         List<TestCase> deserializationTestCases = mapper.readValue(processedResponse, new TypeReference<>() {});
-        String testCases = mapper.writeValueAsString(deserializationTestCases);
         log.info("Response from the LLM received and processed.");
         log.debug("Response from the LLM: {} ", processedResponse);
-        saveTestCases(testCases);
+        return mapper.writeValueAsString(deserializationTestCases);
     }
 
     private void saveTestCases(String testCases)
@@ -63,12 +62,7 @@ public class TestCasesGeneratorService
                 Files.createDirectories(parentDir);
             }
 
-            Files.writeString(
-                    path,
-                    testCases,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING,
-                    StandardOpenOption.SYNC);
+            Files.writeString(path, testCases);
 
             log.info("The test file has been saved.");
         } catch (IOException e)
