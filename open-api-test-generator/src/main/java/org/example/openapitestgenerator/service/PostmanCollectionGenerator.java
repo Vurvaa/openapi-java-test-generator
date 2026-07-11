@@ -27,18 +27,20 @@ public class PostmanCollectionGenerator {
     private static final String RAW_BODY_MODE = "raw";
 
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private final PostmanScriptGenerator scriptGenerator;
     private final LlmClient llmClient;
     private final Config config;
     private final LlmResponseParserService llmResponseParserService;
 
     public PostmanCollectionGenerator(PostmanScriptGenerator scriptGenerator, LlmClient llmClient,
-                                      Config config, LlmResponseParserService llmResponseParserService) {
+                                      Config config, LlmResponseParserService llmResponseParserService,
+                                      ObjectMapper objectMapper) {
         this.scriptGenerator = scriptGenerator;
         this.llmClient = llmClient;
         this.config = config;
         this.llmResponseParserService = llmResponseParserService;
+        this.objectMapper = objectMapper;
     }
 
     public String generate(List<TestCase> testCases) {

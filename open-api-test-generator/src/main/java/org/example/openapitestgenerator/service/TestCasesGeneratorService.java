@@ -23,14 +23,16 @@ public class TestCasesGeneratorService
     private final PromptBuilderService promptBuilderService;
     private final LlmClient llmClient;
     private static final Logger log = LoggerFactory.getLogger(TestCasesGeneratorService.class);
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
     private final LlmResponseParserService llmResponseParserService;
 
-    TestCasesGeneratorService(PromptBuilderService promptBuilderService, LlmClient llmClient, LlmResponseParserService llmResponseParserService)
+    TestCasesGeneratorService(PromptBuilderService promptBuilderService, LlmClient llmClient,
+                              LlmResponseParserService llmResponseParserService, ObjectMapper mapper)
     {
         this.promptBuilderService = promptBuilderService;
         this.llmClient = llmClient;
         this.llmResponseParserService = llmResponseParserService;
+        this.mapper = mapper;
     }
 
     public void generateTestCases(String userPrompt)

@@ -25,14 +25,16 @@ public class SeleniumTestsGeneratorService
     private final LlmClient llmClient;
     private final Config config;
     private final LlmResponseParserService llmResponseParserService;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
-    SeleniumTestsGeneratorService(TestCaseParserService testCaseParserService, LlmClient llmClient, Config config, LlmResponseParserService llmResponseParserService)
+    SeleniumTestsGeneratorService(TestCaseParserService testCaseParserService, LlmClient llmClient,
+                                  Config config, LlmResponseParserService llmResponseParserService, ObjectMapper mapper)
     {
         this.testCaseParserService = testCaseParserService;
         this.llmClient = llmClient;
         this.config = config;
         this.llmResponseParserService = llmResponseParserService;
+        this.mapper = mapper;
     }
 
     public String generateTests(String testCasesFilePath)
