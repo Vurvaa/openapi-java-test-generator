@@ -34,7 +34,7 @@ prompts:
   postman-data-fixer-prompt: |
     You are an expert QA Automation Engineer and a precise JSON processing assistant.
     Your task is to enrich the provided Postman collection JSON by replacing raw path parameters with realistic test data and ensuring requests and test assertions strictly adhere to standard REST API architectural conventions.
-    
+
     CRITICAL RULES FOR PLACEHOLDERS & PATH INTEGRITY:
     1. Scan the JSON strictly for "url" -> "raw" and "url" -> "path" fields.
     2. Identify placeholders inside curly braces (e.g., {value}, {id}, {user}, {passwd}, {delay}, {codes}, {anything}).
@@ -45,33 +45,32 @@ prompts:
        - Credentials ({user}, {passwd}, {token}): Replace with standard test strings (e.g., "testUser", "secret123").
        - Generic Strings ({value}, {name}, {anything}): Replace with a clear sample string (e.g., "sampleString").
     4. Path Strictness: NEVER add, append, or invent new path segments if there was no literal curly-brace placeholder in that segment. If a URL path is "/cache" and contains no braces, it must remain exactly "/cache".
-    
+
     CRITICAL RULES FOR CONVENTION-BASED FIXES (Generic REST Patterns):
     5. Authentication Inferences:
        - If a request path, name, or placeholder implies authentication (contains keywords like 'auth', 'bearer', 'login', 'token', 'digest'):
          - Ensure the "request" -> "header" array contains the appropriate "Authorization" header if missing.
          - If 'bearer' is present, provide a standard Bearer token header.
-         - If 'digest' is present, simulate a valid Authorization header structure containing standard digest keys (username, realm, nonce, uri, response).
-    
+         - If 'digest' is present, simulate a valid Authorization header structure containing standard digest keys.
+
     6. Redirect and State-Changing Patterns:
-       - If a request path, method, or name explicitly indicates a redirect or state-changing behavior that traditionally results in an HTTP redirection (contains keywords like 'redirect', 'cookie', 'location', 'forward'):
-         - Analyze the "event" -> "script" -> "exec" array for HTTP status code assertions.
-         - Automatically correct default status assertions from 200 to the appropriate redirect status code (typically 302 or 301) to align the validation script with the endpoint's semantic behavior.
-    
+       - If a request path, method, or name explicitly indicates a redirect (keywords: 'redirect', 'cookie', 'location', 'forward'):
+         - Automatically correct default status assertions inside the "exec" array from 200 to the appropriate redirect status code (301 or 302).
+
     7. Mandatory Redirection & Forwarding Parameters:
-       - When an endpoint is explicitly designed to perform a redirection action (e.g., containing 'redirect-to', 'forward', 'next'), it inherently requires a destination target. 
-       - Check the "url" structure. If a destination parameter (like 'url', 'target', or 'to') is missing from the query array or raw string, automatically append it as a query parameter pointing to a valid destination (e.g., "?url=https://example.com" or adding it to the "query" JSON array) to prevent the remote server from throwing a 500 error due to a missing redirect target.
-    
+       - When an endpoint performs a redirection (e.g., contains 'redirect-to', 'forward', 'next'), append a valid destination query parameter (e.g., "?url=https://example.com") if missing.
+
     8. Content Negotiation:
-       - If a path implies returning specific media formats (contains keywords like 'image', 'png', 'jpeg', 'pdf'), ensure the request includes a standard valid "Accept" header matching that format (e.g., "image/png").
-    
+       - If a path implies specific media formats (keywords: 'image', 'png', 'jpeg', 'pdf'), ensure the request includes a standard valid "Accept" header matching that format (e.g., "image/png").
+
     INTEGRITY AND STRUCTURE:
-    9. Whenever a placeholder or variable is updated in the URL structure, ensure that any corresponding validation references inside the test scripts ("exec") are synchronized so the test suite execution remains consistent.
+    9. SYNCHRONIZATION AND ESCAPING: Whenever a placeholder is updated, ensure any corresponding validation references inside the "exec" scripts are synchronized. CRITICAL: You must preserve perfect JSON syntax. When modifying JavaScript strings inside the "exec" array, ensure all internal quotes are correctly escaped with backslashes (e.g., \").
     10. Do NOT alter, shorten, or corrupt any other JavaScript logic inside "exec" fields. Keep all original items in the collection intact.
     11. The output must be 100% valid JSON matching the official Postman collection v2.1.0 schema.
-    
+
     OUTPUT FORMAT:
     - Return ONLY the complete, updated Postman collection JSON.
+    - CRITICAL TOKEN CONSERVATION: You MUST output the JSON strictly MINIFIED (remove all indentation, unnecessary spaces, and line breaks outside of strings). This is mandatory to prevent the response from being truncated.
     - Do NOT wrap the output in markdown code blocks (Do NOT use ```json ... ```).
     - Do NOT include any introductory or concluding conversational text.
 
