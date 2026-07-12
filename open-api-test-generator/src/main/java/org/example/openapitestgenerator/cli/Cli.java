@@ -1,11 +1,13 @@
 package org.example.openapitestgenerator.cli;
 
 import org.example.openapitestgenerator.dto.endpoints.EndpointInfo;
+import org.example.openapitestgenerator.dto.testcase.TestCase;
+import org.example.openapitestgenerator.service.multithreading.ParallelExecutorService;
 import org.example.openapitestgenerator.service.llmresponse.LlmResponseSaverService;
 import org.example.openapitestgenerator.service.loader.LoaderService;
 import org.example.openapitestgenerator.service.parser.ParserService;
 import org.example.openapitestgenerator.service.postman.PostmanCollectionGenerator;
-import org.example.openapitestgenerator.service.prompt.TestCasesPromptBuilderService;
+import org.example.openapitestgenerator.service.testcases.TestCasesPromptBuilderService;
 import org.example.openapitestgenerator.service.selenium.SeleniumTestsGeneratorService;
 import org.example.openapitestgenerator.service.testcases.TestCasesGeneratorService;
 import org.springframework.shell.standard.ShellComponent;
@@ -20,24 +22,25 @@ public class Cli
     private final LoaderService loader;
     private final ParserService parser;
     private final SeleniumTestsGeneratorService seleniumTestsGenerator;
-    private final TestCasesPromptBuilderService promptBuilder;
     private final TestCasesGeneratorService testCasesGenerator;
     private final PostmanCollectionGenerator postmanGenerator;
     private final LlmResponseSaverService saver;
+    private final ParallelExecutorService executor;
+    private final TestCasesPromptBuilderService promptBuilder;
     Scanner scanner = new Scanner(System.in);
     String rawOpenApi;
 
-    Cli(LoaderService loader, ParserService parser, SeleniumTestsGeneratorService seleniumTestsGenerator,
-        TestCasesPromptBuilderService promptBuilder, TestCasesGeneratorService testCasesGenerator,
-        PostmanCollectionGenerator postmanGenerator, LlmResponseSaverService saver)
+    Cli(LoaderService loader, ParserService parser, SeleniumTestsGeneratorService seleniumTestsGenerator, TestCasesGeneratorService testCasesGenerator,
+        PostmanCollectionGenerator postmanGenerator, LlmResponseSaverService saver, ParallelExecutorService executor, TestCasesPromptBuilderService promptBuilder)
     {
         this.loader = loader;
         this.parser = parser;
         this.seleniumTestsGenerator = seleniumTestsGenerator;
-        this.promptBuilder = promptBuilder;
         this.testCasesGenerator = testCasesGenerator;
         this.postmanGenerator = postmanGenerator;
         this.saver = saver;
+        this.executor = executor;
+        this.promptBuilder = promptBuilder;
     }
 
     @ShellMethod(key = "start", value = "Открыть меню")
@@ -88,9 +91,29 @@ public class Cli
     {
         System.out.println("Запуск генерации тест-кейсов");
         List<EndpointInfo> endpoints = parser.parseOpenApiSpec(rawOpenApi);
-        String userPrompt = promptBuilder.buildPrompt(endpoints);
-        String testCases = testCasesGenerator.generateTestCases(userPrompt);
-        saver.save(testCases, "src/main/resources/testcases.json");
+        System.out.println("Выберите режим работы");
+        System.out.println("1. Однопоточный");
+        System.out.println("2. Многопоточный"); // На данный момент бесполезен
+        String choice = scanner.nextLine().trim();
+        List<TestCase> testCases;
+        switch (choice)
+        {
+            case "1":
+                String userPrompt = promptBuilder.buildPrompt(endpoints);
+                testCases = testCasesGenerator.generateTestCases(userPrompt);
+                break;
+
+            case "2":
+                testCases = executor.generateParallel(endpoints, 2, testCasesGenerator::processor);
+                break;
+
+            default:
+                System.out.println("Неверный ввод");
+                return;
+        }
+
+        String stringTestCases = testCasesGenerator.testCaseToString(testCases);
+        saver.save(stringTestCases, "src/main/resources/testcases.json");
         System.out.println("Тест-кейсы сгенерированы");
     }
 

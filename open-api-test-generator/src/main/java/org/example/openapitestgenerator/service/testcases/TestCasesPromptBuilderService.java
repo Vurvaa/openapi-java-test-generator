@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.service.prompt;
+package org.example.openapitestgenerator.service.testcases;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;

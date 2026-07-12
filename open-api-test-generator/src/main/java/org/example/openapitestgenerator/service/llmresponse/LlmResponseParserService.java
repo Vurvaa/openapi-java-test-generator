@@ -8,19 +8,24 @@ public class LlmResponseParserService
 {
     public String parse(LlmResponse llmResponse)
     {
-        String startMark = "```java";
-        String endMark = "```";
-        String content = llmResponse.choices().getFirst().message().content();
+        String mark = "```";
+        String content = llmResponse.choices().getFirst().message().content().trim();
 
-        int startIndex = content.indexOf(startMark);
+        int startIndex = content.indexOf(mark);
         if (startIndex == -1)
         {
             return content.trim();
         }
 
-        startIndex += startMark.length();
+        startIndex += mark.length();
 
-        int endIndex = content.indexOf(endMark, startIndex);
+        int nextNewLine = content.indexOf("\n", startIndex);
+        if (nextNewLine != -1)
+        {
+            startIndex = nextNewLine + 1;
+        }
+
+        int endIndex = content.indexOf(mark, startIndex);
         if (endIndex == -1)
         {
             return content.substring(startIndex).trim();
