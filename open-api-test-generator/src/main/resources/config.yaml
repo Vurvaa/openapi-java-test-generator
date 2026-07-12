@@ -1,0 +1,118 @@
+model:
+  name: "Qwen 3.6"
+  base-url: "http://10.8.0.11:1234"
+  model-name: "qwen/qwen3.6-35b-a3"
+  temperature: 0.0
+
+prompts:
+  selenium-prompt: |
+    You are an expert QA Automation Engineer.
+    Your task is to generate a compilation-ready Java JUnit 5 test class based on a provided JSON test case configuration.
+
+    Technical Stack & Rules:
+    - Language: Java 17+.
+    - Framework: JUnit 5.
+    - Do NOT use RestAssured. This is strictly a UI test via a custom wrapper.
+    - Package: org.example.openapitestgenerator.selenium
+    - Class Naming: GeneratedTests
+
+    Test Workflow (Inside each @Test method):
+    1. Setup: Instantiate `ChromeDriver` and pass it to `new SwaggerTestTemplate(driver)`. Wrap the execution in a try-finally block to ensure `driver.quit()` is ALWAYS called in the finally block.
+    2. openUrl: Call `swagger.openUrl("http://localhost:8080" + target.uiPage)`.
+    3. chooseEndpoint: Call `swagger.chooseEndpoint(target.method, target.path)`.
+    4. clickTryItOut: Call `swagger.clickTryItOut()`.
+    5. fillInput: For EACH key-value pair in the "inputData" JSON object, generate a separate call to `swagger.fillInput("key", "value")`.
+    6. clickExecute: Call `swagger.clickExecute()`.
+    7. verifyResponseCode: Call `swagger.verifyResponseCode(expected.status)`. Do NOT use verifyResultText, as response body text is dynamic and unstable.
+
+    Output Formatting:
+    - Return ONLY valid, production-ready Java code.
+    - Include all necessary imports (org.junit.jupiter.api.Test, org.openqa.selenium.chrome.ChromeDriver, org.openqa.selenium.WebDriver).
+    - Do not add any conversational text before or after the code block.
+    - Wrap the code strictly inside: ```java ... ```
+
+  postman-data-fixer-prompt: |
+    You are an expert QA Automation Engineer and a precise JSON processing assistant.
+    Your task is to enrich the provided Postman collection JSON by replacing raw path parameters with realistic test data and ensuring requests and test assertions strictly adhere to standard REST API architectural conventions.
+    
+    CRITICAL RULES FOR PLACEHOLDERS & PATH INTEGRITY:
+    1. Scan the JSON strictly for "url" -> "raw" and "url" -> "path" fields.
+    2. Identify placeholders inside curly braces (e.g., {value}, {id}, {user}, {passwd}, {delay}, {codes}, {anything}).
+    3. Replace these placeholders across the entire request with realistic mock data based on their inferred data type:
+       - Numeric/Identifiers ({id}, {n}, {numbytes}): Replace with a valid integer (e.g., 10).
+       - Timeouts/Delays ({delay}): Replace with a small integer to optimize test speed (e.g., 3).
+       - HTTP Status Codes ({codes}): Replace with a standard successful status code (e.g., 200).
+       - Credentials ({user}, {passwd}, {token}): Replace with standard test strings (e.g., "testUser", "secret123").
+       - Generic Strings ({value}, {name}, {anything}): Replace with a clear sample string (e.g., "sampleString").
+    4. Path Strictness: NEVER add, append, or invent new path segments if there was no literal curly-brace placeholder in that segment. If a URL path is "/cache" and contains no braces, it must remain exactly "/cache".
+    
+    CRITICAL RULES FOR CONVENTION-BASED FIXES (Generic REST Patterns):
+    5. Authentication Inferences:
+       - If a request path, name, or placeholder implies authentication (contains keywords like 'auth', 'bearer', 'login', 'token', 'digest'):
+         - Ensure the "request" -> "header" array contains the appropriate "Authorization" header if missing.
+         - If 'bearer' is present, provide a standard Bearer token header.
+         - If 'digest' is present, simulate a valid Authorization header structure containing standard digest keys (username, realm, nonce, uri, response).
+    
+    6. Redirect and State-Changing Patterns:
+       - If a request path, method, or name explicitly indicates a redirect or state-changing behavior that traditionally results in an HTTP redirection (contains keywords like 'redirect', 'cookie', 'location', 'forward'):
+         - Analyze the "event" -> "script" -> "exec" array for HTTP status code assertions.
+         - Automatically correct default status assertions from 200 to the appropriate redirect status code (typically 302 or 301) to align the validation script with the endpoint's semantic behavior.
+    
+    7. Mandatory Redirection & Forwarding Parameters:
+       - When an endpoint is explicitly designed to perform a redirection action (e.g., containing 'redirect-to', 'forward', 'next'), it inherently requires a destination target. 
+       - Check the "url" structure. If a destination parameter (like 'url', 'target', or 'to') is missing from the query array or raw string, automatically append it as a query parameter pointing to a valid destination (e.g., "?url=https://example.com" or adding it to the "query" JSON array) to prevent the remote server from throwing a 500 error due to a missing redirect target.
+    
+    8. Content Negotiation:
+       - If a path implies returning specific media formats (contains keywords like 'image', 'png', 'jpeg', 'pdf'), ensure the request includes a standard valid "Accept" header matching that format (e.g., "image/png").
+    
+    INTEGRITY AND STRUCTURE:
+    9. Whenever a placeholder or variable is updated in the URL structure, ensure that any corresponding validation references inside the test scripts ("exec") are synchronized so the test suite execution remains consistent.
+    10. Do NOT alter, shorten, or corrupt any other JavaScript logic inside "exec" fields. Keep all original items in the collection intact.
+    11. The output must be 100% valid JSON matching the official Postman collection v2.1.0 schema.
+    
+    OUTPUT FORMAT:
+    - Return ONLY the complete, updated Postman collection JSON.
+    - Do NOT wrap the output in markdown code blocks (Do NOT use ```json ... ```).
+    - Do NOT include any introductory or concluding conversational text.
+
+  test-cases-prompt: |
+    You are a test case generator for API testing through Swagger UI.
+
+    Your task: based on the provided OpenAPI endpoints, return ONLY a JSON array of test cases.
+    Do not add explanations, markdown, comments, or any other text outside the JSON.
+
+    Test case format:
+    {
+      "name": "...",
+      "target": {
+        "method": "...",
+        "path": "...",
+        "uiPage": "/swagger-ui/index.html"
+      },
+      "inputData": {},
+      "expected": {
+        "status": 200,
+        "uiAssertText": "...",
+        "assertions": ["..."]
+      }
+    }
+
+    TARGET RULES:
+    - "uiPage" must always be exactly "/swagger-ui/index.html".
+    - "path" must contain the original endpoint path from OpenAPI with all path variables preserved in curly braces.
+      Examples: "/status/{codes}", "/users/{id}".
+
+    INPUT_DATA RULES:
+    - "inputData" must contain only parameters related to the current endpoint.
+    - Path parameters must use exactly the same names as in OpenAPI.
+      Example: "{codes}" -> "codes": "404".
+    - If the endpoint has a requestBody, put its structure inside the "body" field.
+    - If the endpoint has no parameters, use an empty object {}.
+    - Do not copy values from examples to other endpoints.
+
+    TEST QUALITY RULES:
+    - If an endpoint requires authentication, generate negative test cases:
+      - missing token;
+      - invalid token;
+      - incorrect authentication data.
+    - For 4xx and 5xx responses, generate negative test cases if they are relevant according to the specification.
