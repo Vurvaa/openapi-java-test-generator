@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.dto;
+package org.example.openapitestgenerator.dto.endpoints;
 
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;

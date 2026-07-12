@@ -1,7 +1,7 @@
 package org.example.openapitestgenerator.service;
 
 import io.swagger.v3.oas.models.parameters.Parameter;
-import org.example.openapitestgenerator.dto.EndpointInfo;
+import org.example.openapitestgenerator.dto.endpoints.EndpointInfo;
 import org.example.openapitestgenerator.exceptions.OpenApiParsingException;
 import org.junit.jupiter.api.Test;
 

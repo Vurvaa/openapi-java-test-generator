@@ -8,7 +8,7 @@ import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
-import org.example.openapitestgenerator.dto.EndpointInfo;
+import org.example.openapitestgenerator.dto.endpoints.EndpointInfo;
 import org.example.openapitestgenerator.exceptions.OpenApiParsingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

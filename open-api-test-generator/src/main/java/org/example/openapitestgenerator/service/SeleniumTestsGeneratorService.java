@@ -75,13 +75,34 @@ public class SeleniumTestsGeneratorService
 
         try
         {
+            Path parentDir = path.getParent();
+
+            if (parentDir != null)
+            {
+                Files.createDirectories(parentDir);
+            }
+
             Files.writeString(path, llmResponse);
+
             log.info("The test file has been saved.");
         }
         catch (IOException e)
         {
             log.error("Failed to save the file", e);
             throw new RuntimeException("Failed to save the file", e);
+        }
+    }
+
+    public void runTests()
+    {
+        try
+        {
+            new ProcessBuilder("cmd.exe", "/c", "mvnw.cmd test -Dtest=org.example.openapitestgenerator.selenium.GeneratedTests")
+                    .inheritIO()
+                    .start();
+        } catch (IOException e)
+        {
+            System.out.println("Не удалось запустить: " + e.getMessage());
         }
     }
 }
