@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.loader;
 
 import org.example.openapitestgenerator.exceptions.OpenApiLoadException;
 import org.slf4j.Logger;
