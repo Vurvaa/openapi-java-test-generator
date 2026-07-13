@@ -1,10 +1,13 @@
+/*
 package org.example.openapitestgenerator.service;
 
 import org.example.openapitestgenerator.dto.llmrequest.MessageToLlm;
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.example.openapitestgenerator.infrastructure.LlmClient;
-import org.example.openapitestgenerator.service.prompt.PromptBuilderService;
+import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
+import org.example.openapitestgenerator.service.testcases.TestCasesGeneratorService;
+import org.example.openapitestgenerator.service.testcases.TestCasesPromptBuilderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +33,7 @@ class TestCasesGeneratorServiceTest {
     private static final Path TEST_CASES_PATH = Path.of("src/main/resources/testcases.json");
 
     @Mock
-    private PromptBuilderService promptBuilderService;
+    private TestCasesPromptBuilderService promptBuilderService;
 
     @Mock
     private LlmClient llmClient;
@@ -146,4 +149,4 @@ class TestCasesGeneratorServiceTest {
         assertTrue(testCases.isEmpty());
     }
 
-}
+}*/

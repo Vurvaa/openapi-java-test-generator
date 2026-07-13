@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.example.openapitestgenerator.dto.config.Config;
 import org.example.openapitestgenerator.dto.endpoints.EndpointInfo;
 import org.example.openapitestgenerator.exceptions.PromptBuildingException;
+import org.example.openapitestgenerator.service.testcases.TestCasesPromptBuilderService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +28,7 @@ class PromptBuilderServiceTest {
     @Mock
     Config config;
 
-    private final PromptBuilderService promptBuilderService = new PromptBuilderService(config);
+    private final TestCasesPromptBuilderService promptBuilder = new TestCasesPromptBuilderService (config);
 
     @Test
     void buildPromptShouldBuildPromptForSingleEndpoint() {
@@ -42,7 +43,7 @@ class PromptBuilderServiceTest {
                 )
         ));
 
-        String result = promptBuilderService.buildPrompt(List.of(endpoint));
+        String result = promptBuilder.buildPrompt(List.of(endpoint));
 
         assertThat(result)
                 .contains("Тебе передают набор endpoint'ов OpenAPI")
@@ -72,7 +73,7 @@ class PromptBuilderServiceTest {
                 "operationId", "createUser"
         ));
 
-        String result = promptBuilderService.buildPrompt(List.of(firstEndpoint, secondEndpoint));
+        String result = promptBuilder.buildPrompt(List.of(firstEndpoint, secondEndpoint));
 
         assertThat(result)
                 .contains("--- Endpoint 1 ---")
@@ -88,7 +89,7 @@ class PromptBuilderServiceTest {
     void buildPromptShouldThrowExceptionWhenEndpointsIsNull() {
         String expectedMessage = "endpoints is null or empty";
         PromptBuildingException exception = Assertions.assertThrows(PromptBuildingException.class,
-                () -> promptBuilderService.buildPrompt(null));
+                () -> promptBuilder.buildPrompt(null));
 
         assertThat(exception.getMessage()).isSameAs(expectedMessage);
     }
@@ -97,14 +98,15 @@ class PromptBuilderServiceTest {
     void buildPromptShouldThrowExceptionWhenEndpointsIsEmpty() {
         String expectedMessage = "endpoints is null or empty";
         PromptBuildingException exception = Assertions.assertThrows(PromptBuildingException.class,
-                () -> promptBuilderService.buildPrompt(List.of()));
+                () -> promptBuilder.buildPrompt(List.of()));
 
         assertThat(exception.getMessage()).isSameAs(expectedMessage);
     }
 
     @Test
     void buildPromptShouldThrowPromptBuildingExceptionWhenJsonSerializationFails() throws JsonProcessingException {
-        PromptBuilderService service = new PromptBuilderService(config);
+        TestCasesPromptBuilderService service = new TestCasesPromptBuilderService (config);
+
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
         ObjectWriter objectWriter = mock(ObjectWriter.class);

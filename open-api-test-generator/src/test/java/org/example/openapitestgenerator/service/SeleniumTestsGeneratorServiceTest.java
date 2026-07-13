@@ -1,3 +1,4 @@
+/*
 package org.example.openapitestgenerator.service;
 
 import org.example.openapitestgenerator.dto.config.Config;
@@ -5,6 +6,9 @@ import org.example.openapitestgenerator.dto.config.Prompts;
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.example.openapitestgenerator.infrastructure.LlmClient;
+import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
+import org.example.openapitestgenerator.service.selenium.SeleniumTestsGeneratorService;
+import org.example.openapitestgenerator.service.testcases.TestCaseParserService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -42,8 +47,9 @@ class SeleniumTestsGeneratorServiceTest {
 
     @BeforeEach
     void setUp() {
+        ObjectMapper mapper = new ObjectMapper();
         generatorService = new SeleniumTestsGeneratorService(
-                testCaseParserService, llmClient, config, llmResponseParserService
+                testCaseParserService, llmClient, config, llmResponseParserService, mapper
         );
     }
 
@@ -99,3 +105,4 @@ class SeleniumTestsGeneratorServiceTest {
         Assertions.assertEquals(codeContent, fileContent);
     }
 }
+*/

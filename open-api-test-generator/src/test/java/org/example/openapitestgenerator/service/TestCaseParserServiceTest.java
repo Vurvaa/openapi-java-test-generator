@@ -1,6 +1,7 @@
 package org.example.openapitestgenerator.service;
 
 import org.example.openapitestgenerator.dto.testcase.TestCase;
+import org.example.openapitestgenerator.service.testcases.TestCaseParserService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

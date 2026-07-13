@@ -1,6 +1,7 @@
 package org.example.openapitestgenerator.service;
 
 import org.example.openapitestgenerator.exceptions.OpenApiLoadException;
+import org.example.openapitestgenerator.service.loader.LoaderService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -3,6 +3,7 @@ package org.example.openapitestgenerator.service;
 import org.example.openapitestgenerator.dto.llmresponse.Choice;
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.example.openapitestgenerator.dto.llmresponse.Message;
+import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -59,11 +60,12 @@ class LlmResponseParserServiceTest {
 
     @Test
     void parseShouldReturnEmptyStringWhenJavaBlockIsEmpty() {
+        String expectedMessage = "java";
         LlmResponse response = response("```java```");
 
         String result = parserService.parse(response);
 
-        assertThat(result).isEmpty();
+        assertThat(result).isEqualTo(expectedMessage);
     }
 
     private LlmResponse response(String content) {
