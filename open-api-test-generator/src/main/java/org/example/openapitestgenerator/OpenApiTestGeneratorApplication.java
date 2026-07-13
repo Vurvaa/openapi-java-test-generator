@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 public class OpenApiTestGeneratorApplication
 {
 
-    static void main(String[] args)
+    public static void main(String[] args)
     {
         System.setOut(new java.io.PrintStream(System.out, true, StandardCharsets.UTF_8));
         System.setProperty("spring.shell.interactive.enabled", "true");
