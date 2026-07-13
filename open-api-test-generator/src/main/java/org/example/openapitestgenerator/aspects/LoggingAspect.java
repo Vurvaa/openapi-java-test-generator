@@ -4,36 +4,43 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import org.example.openapitestgenerator.conditions.DebugCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Arrays;
 
 @Aspect
 @Component
-@Conditional(DebugCondition.class)
 public class LoggingAspect {
-    private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
 
-    @Pointcut("""
-            execution(* org.example.openapitestgenerator.service..*(..)) ||
-                           execution(* org.example.openapitestgenerator.infrastructure..*(..))""")
-    public void logServiceMethods() {
-    }
+    @Pointcut("execution(* org.example.openapitestgenerator.service..*(..))")
+    public void serviceLayer() {}
 
-    @Around("logServiceMethods()")
-    public Object logMethodEntryAndExit(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object[] args = joinPoint.getArgs();
+    @Pointcut("execution(* org.example.openapitestgenerator.infrastructure..*(..))")
+    public void llmClientLayer() {}
 
-        logger.debug("Entering method [{}] with arguments: {}", joinPoint.getSignature(), Arrays.toString(args));
+    @Around("serviceLayer() || llmClientLayer()")
+    public Object logDebug(ProceedingJoinPoint joinPoint) throws Throwable {
+        Logger log = LoggerFactory.getLogger(joinPoint.getSignature().getDeclaringType());
 
-        Object result = joinPoint.proceed();
+        if (!log.isDebugEnabled()) {
+            return joinPoint.proceed();
+        }
 
-        logger.debug("Exiting method [{}] with result: {}", joinPoint.getSignature(), result);
+        String method = joinPoint.getSignature().getName();
+        log.debug("-> {}", method);
 
-        return result;
+        boolean isCompleted = false;
+
+        long start = System.currentTimeMillis();
+        try {
+            Object result = joinPoint.proceed();
+            isCompleted = true;
+            log.debug("<- {} completed in {} ms", method, System.currentTimeMillis() - start);
+
+            return result;
+        } finally {
+            log.debug("<- {} {} in {} ms", method, isCompleted ? "completed" : "failed",
+                    System.currentTimeMillis() - start);
+        }
     }
 }
