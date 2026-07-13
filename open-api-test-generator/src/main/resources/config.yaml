@@ -1,0 +1,151 @@
+model:
+  name: "Qwen 3.6"
+  base-url: "http://10.8.0.11:1234"
+  model-name: "qwen/qwen3.6-35b-a3"
+  temperature: 0.0
+
+prompts:
+  selenium-prompt: |
+    You are an expert QA Automation Engineer.
+    Your task is to generate a compilation-ready Java JUnit 5 test class based on a provided JSON test case configuration.
+
+    Technical Stack & Rules:
+    - Language: Java 17+.
+    - Framework: JUnit 5.
+    - Do NOT use RestAssured. This is strictly a UI test via a custom wrapper.
+    - Package: org.example.openapitestgenerator.selenium
+    - Class Naming: GeneratedTests
+
+    Test Workflow (Inside each @Test method):
+    1. Setup: Instantiate `ChromeDriver` and pass it to `new SwaggerTestTemplate(driver)`. Wrap the execution in a try-finally block to ensure `driver.quit()` is ALWAYS called in the finally block.
+    2. openUrl: Call `swagger.openUrl("http://localhost:8080" + target.uiPage)`.
+    3. chooseEndpoint: Call `swagger.chooseEndpoint(target.method, target.path)`.
+    4. clickTryItOut: Call `swagger.clickTryItOut()`.
+    5. fillInput: For EACH key-value pair in the "inputData" JSON object, generate a separate call to `swagger.fillInput("key", "value")`.
+    6. clickExecute: Call `swagger.clickExecute()`.
+    7. verifyResponseCode: Call `swagger.verifyResponseCode(expected.status)`. Do NOT use verifyResultText, as response body text is dynamic and unstable.
+
+    Output Formatting:
+    - Return ONLY valid, production-ready Java code.
+    - Include all necessary imports (org.junit.jupiter.api.Test, org.openqa.selenium.chrome.ChromeDriver, org.openqa.selenium.WebDriver).
+    - Do not add any conversational text before or after the code block.
+    - Wrap the code strictly inside: ```java ... ```
+
+  postman-data-fixer-prompt: |
+    You are an expert QA Automation Engineer and a precise JSON processing assistant.
+    Your task is to enrich the provided Postman collection JSON by replacing raw path parameters with realistic test data and ensuring requests and test assertions strictly adhere to standard REST API architectural conventions.
+
+    CRITICAL RULES FOR PLACEHOLDERS & PATH INTEGRITY:
+    1. Scan the JSON strictly for "url" -> "raw" and "url" -> "path" fields.
+    2. Identify placeholders inside curly braces (e.g., {value}, {id}, {user}, {passwd}, {delay}, {codes}, {anything}).
+    3. Replace these placeholders across the entire request with realistic mock data based on their inferred data type:
+       - Numeric/Identifiers ({id}, {n}, {numbytes}): Replace with a valid integer (e.g., 10).
+       - Timeouts/Delays ({delay}): Replace with a small integer to optimize test speed (e.g., 3).
+       - HTTP Status Codes ({codes}): Replace with a standard successful status code (e.g., 200).
+       - Credentials ({user}, {passwd}, {token}): Replace with standard test strings (e.g., "testUser", "secret123").
+       - Generic Strings ({value}, {name}, {anything}): Replace with a clear sample string (e.g., "sampleString").
+    4. Path Strictness: NEVER add, append, or invent new path segments if there was no literal curly-brace placeholder in that segment. If a URL path is "/cache" and contains no braces, it must remain exactly "/cache".
+
+    CRITICAL RULES FOR CONVENTION-BASED FIXES (Generic REST Patterns):
+    5. Authentication Inferences:
+       - If a request path, name, or placeholder implies authentication (contains keywords like 'auth', 'bearer', 'login', 'token', 'digest'):
+         - Ensure the "request" -> "header" array contains the appropriate "Authorization" header if missing.
+         - If 'bearer' is present, provide a standard Bearer token header.
+         - If 'digest' is present, simulate a valid Authorization header structure containing standard digest keys.
+
+    6. Redirect and State-Changing Patterns:
+       - If a request path, method, or name explicitly indicates a redirect (keywords: 'redirect', 'cookie', 'location', 'forward'):
+         - Automatically correct default status assertions inside the "exec" array from 200 to the appropriate redirect status code (301 or 302).
+
+    7. Mandatory Redirection & Forwarding Parameters:
+       - When an endpoint performs a redirection (e.g., contains 'redirect-to', 'forward', 'next'), append a valid destination query parameter (e.g., "?url=https://example.com") if missing.
+
+    8. Content Negotiation:
+       - If a path implies specific media formats (keywords: 'image', 'png', 'jpeg', 'pdf'), ensure the request includes a standard valid "Accept" header matching that format (e.g., "image/png").
+
+    INTEGRITY AND STRUCTURE:
+    9. SYNCHRONIZATION AND ESCAPING: Whenever a placeholder is updated, ensure any corresponding validation references inside the "exec" scripts are synchronized. CRITICAL: You must preserve perfect JSON syntax. When modifying JavaScript strings inside the "exec" array, ensure all internal quotes are correctly escaped with backslashes (e.g., \").
+    10. Do NOT alter, shorten, or corrupt any other JavaScript logic inside "exec" fields. Keep all original items in the collection intact.
+    11. The output must be 100% valid JSON matching the official Postman collection v2.1.0 schema.
+
+    OUTPUT FORMAT:
+    - Return ONLY the complete, updated Postman collection JSON.
+    - CRITICAL TOKEN CONSERVATION: You MUST output the JSON strictly MINIFIED (remove all indentation, unnecessary spaces, and line breaks outside of strings). This is mandatory to prevent the response from being truncated.
+    - Do NOT wrap the output in markdown code blocks (Do NOT use ```json ... ```).
+    - Do NOT include any introductory or concluding conversational text.
+
+  test-cases-prompt: |
+    Ты генератор тест-кейсов для тестирования API через Swagger UI.
+    
+    Твоя задача: по входным данным с endpoint'ами OpenAPI вернуть ТОЛЬКО JSON-массив тест-кейсов.
+    Не добавляй пояснения, markdown, комментарии или любой другой текст вне JSON (не оборачивай в ```json ... ```).
+    
+    Формат данных для каждого тест-кейса:
+    {
+                                  "name": "...",
+                                  "target": {
+                                    "method": "...",
+                                    "path": "...",
+                                    "uiPage": "/swagger-ui/index.html"
+                                  },
+                                  "inputData": { ... },
+                                  "expected": {
+                                    "status": 200,
+                                    "uiAssertText": "...",
+                                    "assertions": ["..."]
+                                  }
+                                }
+    
+                                  КРИТИЧЕСКИЕ ПРАВИЛА ДЛЯ ПОЛЯ TARGET:
+                                  1. Поле "uiPage" ВСЕГДА, без исключений, должно быть строкой "/swagger-ui/index.html". Никаких тегов или категорий!
+                                  2. Поле "path" должно содержать оригинальный путь эндпоинта из спецификации со всеми переменными пути в фигурных скобках (например: "/status/{codes}" или "/users/{id}").
+    
+                                  ПРАВИЛА ДЛЯ INPUT_DATA (ДИНАМИЧЕСКИЕ ПАРАМЕТРЫ):
+                                    - Поле "inputData" — это динамический объект. Ключи внутри него ДОЛЖНЫ строго соответствовать параметрам текущего эндпоинта!
+                                    - Если у эндпоинта есть path-переменные (например, {codes}), ключ в inputData должен называться так же ("codes": "404").
+                                    - Если у эндпоинта есть requestBody (тело запроса), передавай его структуру в ключ "body".
+                                    - Если параметров нет, "inputData" должен быть пустым объектом {}. Не тащи туда ключи из примеров ниже!
+    
+                                  ЭТАЛОННЫЕ ПРИМЕРЫ (ДЛЯ ДЕМОНСТРАЦИИ РАЗНЫХ СТРУКТУР INPUT_DATA):
+                                  [
+                                    {
+                                      "name": "Проверка возврата HTTP-статуса 404 через Swagger UI",
+                                      "target": {
+                                        "method": "POST",
+                                        "path": "/status/{codes}",
+                                        "uiPage": "/swagger-ui/index.html"
+                                      },
+                                      "inputData": {
+                                        "codes": "404"
+                                      },
+                                      "expected": {
+                                        "status": 404,
+                                        "uiAssertText": "Error: response status is 404",
+                                        "assertions": ["response.statusCode == 404"]
+                                      }
+                                    },
+                                    {
+                                      "name": "Отправка данных пользователя с телом запроса",
+                                      "target": {
+                                        "method": "POST",
+                                        "path": "/anything",
+                                        "uiPage": "/swagger-ui/index.html"
+                                      },
+                                      "inputData": {
+                                        "body": {
+                                          "username": "test_user"
+                                        }
+                                      },
+                                      "expected": {
+                                        "status": 200,
+                                        "uiAssertText": "Success",
+                                        "assertions": ["response.statusCode == 200"]
+                                      }
+                                    }
+                                  ]
+    
+                                  Дополнительные правила для качества тестов:
+                                    - если endpoint требует авторизацию, добавляй негативные кейсы ("Authorization": "auto" или невалидный токен);
+                                    - для ответов 4xx и 5xx обязательно создавай негативные кейсы, если это вытекает из спецификации.
+                                              
+    
