@@ -1,7 +1,7 @@
 logging:
   level:
-    org.example.openapitestgenerator.infrastructure: DEBUG
-    org.example.openapitestgenerator.service: DEBUG
+    org.example.openapitestgenerator.infrastructure: INFO
+    org.example.openapitestgenerator.service: INFO
 
 model:
   name: "Qwen 3.6"
