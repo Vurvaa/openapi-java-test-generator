@@ -1,10 +1,12 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.selenium;
 
 import org.example.openapitestgenerator.dto.config.Config;
 import org.example.openapitestgenerator.dto.llmrequest.MessageToLlm;
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.example.openapitestgenerator.infrastructure.LlmClient;
+import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
+import org.example.openapitestgenerator.service.testcases.TestCaseParserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -13,8 +15,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 @Service
@@ -25,14 +25,16 @@ public class SeleniumTestsGeneratorService
     private final LlmClient llmClient;
     private final Config config;
     private final LlmResponseParserService llmResponseParserService;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
-    SeleniumTestsGeneratorService(TestCaseParserService testCaseParserService, LlmClient llmClient, Config config, LlmResponseParserService llmResponseParserService)
+    SeleniumTestsGeneratorService(TestCaseParserService testCaseParserService, LlmClient llmClient,
+                                  Config config, LlmResponseParserService llmResponseParserService, ObjectMapper mapper)
     {
         this.testCaseParserService = testCaseParserService;
         this.llmClient = llmClient;
         this.config = config;
         this.llmResponseParserService = llmResponseParserService;
+        this.mapper = mapper;
     }
 
     public String generateTests(String testCasesFilePath)
@@ -67,30 +69,6 @@ public class SeleniumTestsGeneratorService
         log.info("Response from the LLM received and processed.");
         log.debug("Response from the LLM: {} ", processedResponse);
         return processedResponse;
-    }
-
-    public void saveTests(String llmResponse, String outputPath)
-    {
-        Path path = Path.of(outputPath);
-
-        try
-        {
-            Path parentDir = path.getParent();
-
-            if (parentDir != null)
-            {
-                Files.createDirectories(parentDir);
-            }
-
-            Files.writeString(path, llmResponse);
-
-            log.info("The test file has been saved.");
-        }
-        catch (IOException e)
-        {
-            log.error("Failed to save the file", e);
-            throw new RuntimeException("Failed to save the file", e);
-        }
     }
 
     public void runTests()

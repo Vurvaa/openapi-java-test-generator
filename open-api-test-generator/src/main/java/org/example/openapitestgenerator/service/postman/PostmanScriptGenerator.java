@@ -1,4 +1,4 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.postman;
 
 import org.example.openapitestgenerator.dto.testcase.Expected;
 import org.example.openapitestgenerator.dto.postman.Event;

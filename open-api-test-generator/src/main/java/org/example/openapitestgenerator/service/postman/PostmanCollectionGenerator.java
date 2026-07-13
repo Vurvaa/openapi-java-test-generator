@@ -1,5 +1,6 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.postman;
 
+import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
 import tools.jackson.databind.ObjectMapper;
 import org.example.openapitestgenerator.dto.config.Config;
 import org.example.openapitestgenerator.dto.llmrequest.MessageToLlm;
@@ -9,9 +10,6 @@ import org.example.openapitestgenerator.dto.postman.*;
 import org.example.openapitestgenerator.infrastructure.LlmClient;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 @Service
@@ -27,18 +25,20 @@ public class PostmanCollectionGenerator {
     private static final String RAW_BODY_MODE = "raw";
 
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private final PostmanScriptGenerator scriptGenerator;
     private final LlmClient llmClient;
     private final Config config;
     private final LlmResponseParserService llmResponseParserService;
 
     public PostmanCollectionGenerator(PostmanScriptGenerator scriptGenerator, LlmClient llmClient,
-                                      Config config, LlmResponseParserService llmResponseParserService) {
+                                      Config config, LlmResponseParserService llmResponseParserService,
+                                      ObjectMapper objectMapper) {
         this.scriptGenerator = scriptGenerator;
         this.llmClient = llmClient;
         this.config = config;
         this.llmResponseParserService = llmResponseParserService;
+        this.objectMapper = objectMapper;
     }
 
     public String generate(List<TestCase> testCases) {
@@ -99,29 +99,6 @@ public class PostmanCollectionGenerator {
     private boolean supportsBody(String method) {
         return List.of("POST", "PUT", "PATCH")
                 .contains(method.toUpperCase());
-    }
-
-
-    public void save(String llmResponse, String outputPath)
-    {
-        Path path = Path.of(outputPath);
-
-        try
-        {
-            Path parentDir = path.getParent();
-
-            if (parentDir != null)
-            {
-                Files.createDirectories(parentDir);
-            }
-
-            Files.writeString(path, llmResponse);
-
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Failed to save the file", e);
-        }
     }
 
     public void startNewman()
