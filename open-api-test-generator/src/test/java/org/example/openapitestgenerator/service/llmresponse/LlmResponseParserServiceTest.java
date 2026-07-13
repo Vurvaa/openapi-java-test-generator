@@ -1,9 +1,8 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.llmresponse;
 
 import org.example.openapitestgenerator.dto.llmresponse.Choice;
 import org.example.openapitestgenerator.dto.llmresponse.LlmResponse;
 import org.example.openapitestgenerator.dto.llmresponse.Message;
-import org.example.openapitestgenerator.service.llmresponse.LlmResponseParserService;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

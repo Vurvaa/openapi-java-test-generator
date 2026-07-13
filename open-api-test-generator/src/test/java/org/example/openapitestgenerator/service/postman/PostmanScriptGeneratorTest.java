@@ -1,8 +1,7 @@
-package org.example.openapitestgenerator.service;
+package org.example.openapitestgenerator.service.postman;
 
 import org.example.openapitestgenerator.dto.postman.Event;
 import org.example.openapitestgenerator.dto.testcase.Expected;
-import org.example.openapitestgenerator.service.postman.PostmanScriptGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
