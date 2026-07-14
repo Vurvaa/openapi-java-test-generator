@@ -10,6 +10,7 @@ import org.example.openapitestgenerator.service.postman.PostmanCollectionGenerat
 import org.example.openapitestgenerator.service.testcases.TestCasesPromptBuilderService;
 import org.example.openapitestgenerator.service.selenium.SeleniumTestsGeneratorService;
 import org.example.openapitestgenerator.service.testcases.TestCasesGeneratorService;
+import org.example.openapitestgenerator.service.zephyr.CsvZephyrService;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
@@ -27,11 +28,12 @@ public class Cli
     private final LlmResponseSaverService saver;
     private final ParallelExecutorService executor;
     private final TestCasesPromptBuilderService promptBuilder;
+    private final CsvZephyrService csvZephyrService;
     Scanner scanner = new Scanner(System.in);
     String rawOpenApi;
 
     Cli(LoaderService loader, ParserService parser, SeleniumTestsGeneratorService seleniumTestsGenerator, TestCasesGeneratorService testCasesGenerator,
-        PostmanCollectionGenerator postmanGenerator, LlmResponseSaverService saver, ParallelExecutorService executor, TestCasesPromptBuilderService promptBuilder)
+        PostmanCollectionGenerator postmanGenerator, LlmResponseSaverService saver, ParallelExecutorService executor, TestCasesPromptBuilderService promptBuilder, CsvZephyrService csvZephyrService)
     {
         this.loader = loader;
         this.parser = parser;
@@ -41,6 +43,7 @@ public class Cli
         this.saver = saver;
         this.executor = executor;
         this.promptBuilder = promptBuilder;
+        this.csvZephyrService = csvZephyrService;
     }
 
     @ShellMethod(key = "start", value = "Открыть меню")
@@ -57,7 +60,8 @@ public class Cli
             System.out.println("1. Генерация тест-кейсов");
             System.out.println("2. Генерация Selenium UI тестов");
             System.out.println("3. Генерация Postman API тестов");
-            System.out.println("4. Выход");
+            System.out.println("4. Генерация тест-кесов для Zephyr");
+            System.out.println("5. Выход");
 
             String choice = scanner.nextLine().trim();
 
@@ -76,9 +80,14 @@ public class Cli
                     break;
 
                 case "4":
+                    zephyr();
+                    break;
+
+                case "5":
                     System.out.println("Завершение работы");
                     running = false;
                     break;
+
                 default:
                     System.out.println("Неверный ввод");
                     break;
@@ -154,5 +163,13 @@ public class Cli
             System.out.println("Запуск тестов");
             postmanGenerator.startNewman();
         }
+    }
+
+    @ShellMethod(key = "zephyr", value = "Генерация тест-кесов для Zephyr")
+    public void zephyr(){
+        System.out.println("Запуск генерации тест-кейсов для Zephyr");
+        List<TestCase> testCases = testCasesGenerator.testCasesDeserialization();
+        csvZephyrService.generateZephyrTestCases(testCases, "src/main/resources/zephyr.csv");
+        System.out.println("Тест-кейсы для Zephyr сгенерированы");
     }
 }
