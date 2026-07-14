@@ -1,19 +1,17 @@
 package org.example.openapitestgenerator.service.zephyr;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.example.openapitestgenerator.dto.testcase.InputData;
 import org.example.openapitestgenerator.dto.testcase.TestCase;
 import org.example.openapitestgenerator.exceptions.ZephyrTestCaseException;
-import org.example.openapitestgenerator.service.TestCaseParserService;
+import org.example.openapitestgenerator.service.testcases.TestCaseParserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
