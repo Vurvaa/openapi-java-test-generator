@@ -41,7 +41,6 @@ public class LlmClient
         LlmRequest requestBody = new LlmRequest(modelName, messages, temperature);
 
         log.info("Sending a request to the model {}", name);
-        log.debug("Request: {}", requestBody);
 
         try
         {

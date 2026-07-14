@@ -67,7 +67,6 @@ public class SeleniumTestsGeneratorService
         LlmResponse llmResponse = mapper.readValue(rawLlmResponse, LlmResponse.class);
         String processedResponse = llmResponseParserService.parse(llmResponse);
         log.info("Response from the LLM received and processed.");
-        log.debug("Response from the LLM: {} ", processedResponse);
         return processedResponse;
     }
 
