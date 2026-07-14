@@ -28,12 +28,12 @@ public class Cli
     private final LlmResponseSaverService saver;
     private final ParallelExecutorService executor;
     private final TestCasesPromptBuilderService promptBuilder;
-    private final CsvZephyrService zephyrService;
+    private final CsvZephyrService csvZephyrService;
     Scanner scanner = new Scanner(System.in);
     String rawOpenApi;
 
     Cli(LoaderService loader, ParserService parser, SeleniumTestsGeneratorService seleniumTestsGenerator, TestCasesGeneratorService testCasesGenerator,
-        PostmanCollectionGenerator postmanGenerator, LlmResponseSaverService saver, ParallelExecutorService executor, TestCasesPromptBuilderService promptBuilder, CsvZephyrService zephyrService)
+        PostmanCollectionGenerator postmanGenerator, LlmResponseSaverService saver, ParallelExecutorService executor, TestCasesPromptBuilderService promptBuilder, CsvZephyrService csvZephyrService)
     {
         this.loader = loader;
         this.parser = parser;
@@ -43,7 +43,7 @@ public class Cli
         this.saver = saver;
         this.executor = executor;
         this.promptBuilder = promptBuilder;
-        this.zephyrService = zephyrService;
+        this.csvZephyrService = csvZephyrService;
     }
 
     @ShellMethod(key = "start", value = "Открыть меню")
@@ -60,7 +60,7 @@ public class Cli
             System.out.println("1. Генерация тест-кейсов");
             System.out.println("2. Генерация Selenium UI тестов");
             System.out.println("3. Генерация Postman API тестов");
-            System.out.println("4. Генерация CSV для Zephyr");
+            System.out.println("4. Генерация тест-кейсов для Zephyr");
             System.out.println("5. Выход");
 
             String choice = scanner.nextLine().trim();
@@ -165,11 +165,13 @@ public class Cli
         }
     }
 
-    @ShellMethod(key = "zephyr", value = "Генерация CSV для Zephyr")
+    @ShellMethod(key = "zephyr", value = "Генерация тест кейсов для Zephyr")
     public void zephyr(){
-        System.out.println("Запуск генерации CSV для Zephyr");
+        System.out.println("Запуск генерации тест-кейсов для Zephyr");
         List<TestCase> testCases = testCasesGenerator.testCasesDeserialization();
-        zephyrService.generateZephyrTestCases(testCases, "src/main/resources/zephyr.csv");
-        System.out.println("CSV сгенерирован");
+        csvZephyrService.generateZephyrTestCases(testCases, "src/main/resources/zephyr.csv");
+        System.out.println("Тест-кейсы для Zephyr сгенерированы");
     }
+
+
 }
