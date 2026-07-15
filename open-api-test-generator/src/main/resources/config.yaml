@@ -20,19 +20,33 @@ prompts:
     - Do NOT use RestAssured. This is strictly a UI test via a custom wrapper.
     - Package: org.example.openapitestgenerator.selenium
     - Class Naming: GeneratedTests
+    - Naming Convention: All test method names MUST be written strictly in English and MUST be unique.
 
     Test Workflow (Inside each @Test method):
     1. Setup: Instantiate `ChromeDriver` and pass it to `new SwaggerTestTemplate(driver)`. Wrap the execution in a try-finally block to ensure `driver.quit()` is ALWAYS called in the finally block.
     2. openUrl: Call `swagger.openUrl("http://localhost:8080" + target.uiPage)`.
-    3. chooseEndpoint: Call `swagger.chooseEndpoint(target.method, target.path)`.
-    4. clickTryItOut: Call `swagger.clickTryItOut()`.
-    5. fillInput: For EACH key-value pair in the "inputData" JSON object, generate a separate call to `swagger.fillInput("key", "value")`.
-    6. clickExecute: Call `swagger.clickExecute()`.
-    7. verifyResponseCode: Call `swagger.verifyResponseCode(expected.status)`. Do NOT use verifyResultText, as response body text is dynamic and unstable.
+    3. Authorization (CRITICAL STEP):
+    - Check the "inputData" JSON object.
+    - If and ONLY if "inputData" contains the key "__auth" with the value "basic", generate:
+      swagger.authorize("basic", "testuser", "testpass");
+    - If and ONLY if "inputData" contains the key "__auth" with the value "bearer", generate:
+      swagger.authorize("bearer", "your_mock_token_here", "");
+    - If the "__auth" key is completely absent or has a value of "none", do NOT generate any swagger.authorize() call, regardless of the endpoint path!
+    - NEVER generate a fillInput call for auth keys.
+    4. chooseEndpoint: Call `swagger.chooseEndpoint(target.method, target.path)`.
+    5. clickTryItOut: Call `swagger.clickTryItOut()`.
+    6. fillInput: For EACH key-value pair in the "inputData" JSON object, generate a separate call to `swagger.fillInput("key", "value")`.
+    7. clickExecute: Call `swagger.clickExecute()`.
+    8. verifyResponseCode: Call `swagger.verifyResponseCode(expected.status)`. Do NOT use verifyResultText, as response body text is dynamic and unstable.
 
+    Browser Behavior Overrides (CRITICAL RULES):
+    1. TRACE Methods: Browsers strictly block HTTP TRACE requests. If `target.method` is "TRACE", add the `@org.junit.jupiter.api.Disabled("Blocked by browser CORS/security policies")` annotation directly above the `@Test` annotation.
+    2. Redirects: Browsers automatically follow redirects (301, 302). If the `target.path` contains "redirect", the final UI response code will be 200 OK. Override the expected status code and call `swagger.verifyResponseCode(200);` ONLY for redirects.
+    3. Cache, Etag, Images: Do NOT override the expected status code. Strictly use the status code specified in the JSON "expected.status" field (e.g., if expected is 304, generate `swagger.verifyResponseCode(304);`).
+    
     Output Formatting:
     - Return ONLY valid, production-ready Java code.
-    - Include all necessary imports (org.junit.jupiter.api.Test, org.openqa.selenium.chrome.ChromeDriver, org.openqa.selenium.WebDriver).
+    - Include all necessary imports (org.junit.jupiter.api.Test, org.junit.jupiter.api.Disabled, org.openqa.selenium.chrome.ChromeDriver, org.openqa.selenium.WebDriver).
     - Do not add any conversational text before or after the code block.
     - Wrap the code strictly inside: ```java ... ```
 
@@ -52,11 +66,53 @@ prompts:
     4. Path Strictness: NEVER add, append, or invent new path segments if there was no literal curly-brace placeholder in that segment. If a URL path is "/cache" and contains no braces, it must remain exactly "/cache".
 
     CRITICAL RULES FOR CONVENTION-BASED FIXES (Generic REST Patterns):
-    5. Authentication Inferences:
-       - If a request path, name, or placeholder implies authentication (contains keywords like 'auth', 'bearer', 'login', 'token', 'digest'):
-         - Ensure the "request" -> "header" array contains the appropriate "Authorization" header if missing.
-         - If 'bearer' is present, provide a standard Bearer token header.
-         - If 'digest' is present, simulate a valid Authorization header structure containing standard digest keys.
+    5. Authentication (CRITICAL):
+    - Analyze the OpenAPI security requirements for EVERY operation.
+    - Respect both the global "security" section and the operation-level "security" section.
+    - If an operation overrides security with "security: []", do NOT add any authentication.
+    
+    - If the operation requires HTTP Bearer authentication:
+     - Ensure the Postman request contains:
+       "auth": {
+         "type": "bearer",
+         "bearer": [
+           {
+             "key": "token",
+             "value": "your_mock_token_here",
+             "type": "string"
+           }
+         ]
+       }
+     - Remove any conflicting Authorization headers.
+    
+    - If the operation requires API Key authentication:
+     - Ensure the request contains either:
+       - an "auth" object of type "apikey", or
+       - the required header (for example "X-Api-Key") exactly as defined in the OpenAPI specification.
+     - Use the value "test-api-key".
+    
+    - If the operation requires HTTP Basic authentication:
+     - Ensure the request contains:
+       "auth": {
+         "type": "basic",
+         "basic": [
+           {
+             "key": "username",
+             "value": "testuser",
+             "type": "string"
+           },
+           {
+             "key": "password",
+             "value": "testpass",
+             "type": "string"
+           }
+         ]
+       }
+    
+    - If multiple authentication schemes are required simultaneously, configure ALL of them exactly as defined by the OpenAPI specification.
+    
+    - Never infer authentication from endpoint names, paths or keywords.
+     Authentication MUST be determined ONLY from the OpenAPI security definitions.
 
     6. Redirect and State-Changing Patterns:
        - If a request path, method, or name explicitly indicates a redirect (keywords: 'redirect', 'cookie', 'location', 'forward'):
@@ -81,76 +137,56 @@ prompts:
 
   test-cases-prompt: |
     Ты генератор тест-кейсов для тестирования API через Swagger UI.
-    
     Твоя задача: по входным данным с endpoint'ами OpenAPI вернуть ТОЛЬКО JSON-массив тест-кейсов.
-    Не добавляй пояснения, markdown, комментарии или любой другой текст вне JSON (не оборачивай в ```json ... ```).
-    
+    Не добавляй пояснения, markdown, комментарии или любой другой текст вне JSON.
+
     Формат данных для каждого тест-кейса:
     {
-                                  "name": "...",
-                                  "target": {
-                                    "method": "...",
-                                    "path": "...",
-                                    "uiPage": "/swagger-ui/index.html"
-                                  },
-                                  "inputData": { ... },
-                                  "expected": {
-                                    "status": 200,
-                                    "uiAssertText": "...",
-                                    "assertions": ["..."]
-                                  }
-                                }
-    
-                                  КРИТИЧЕСКИЕ ПРАВИЛА ДЛЯ ПОЛЯ TARGET:
-                                  1. Поле "uiPage" ВСЕГДА, без исключений, должно быть строкой "/swagger-ui/index.html". Никаких тегов или категорий!
-                                  2. Поле "path" должно содержать оригинальный путь эндпоинта из спецификации со всеми переменными пути в фигурных скобках (например: "/status/{codes}" или "/users/{id}").
-    
-                                  ПРАВИЛА ДЛЯ INPUT_DATA (ДИНАМИЧЕСКИЕ ПАРАМЕТРЫ):
-                                    - Поле "inputData" — это динамический объект. Ключи внутри него ДОЛЖНЫ строго соответствовать параметрам текущего эндпоинта!
-                                    - Если у эндпоинта есть path-переменные (например, {codes}), ключ в inputData должен называться так же ("codes": "404").
-                                    - Если у эндпоинта есть requestBody (тело запроса), передавай его структуру в ключ "body".
-                                    - Если параметров нет, "inputData" должен быть пустым объектом {}. Не тащи туда ключи из примеров ниже!
-    
-                                  ЭТАЛОННЫЕ ПРИМЕРЫ (ДЛЯ ДЕМОНСТРАЦИИ РАЗНЫХ СТРУКТУР INPUT_DATA):
-                                  [
-                                    {
-                                      "name": "Проверка возврата HTTP-статуса 404 через Swagger UI",
-                                      "target": {
-                                        "method": "POST",
-                                        "path": "/status/{codes}",
-                                        "uiPage": "/swagger-ui/index.html"
-                                      },
-                                      "inputData": {
-                                        "codes": "404"
-                                      },
-                                      "expected": {
-                                        "status": 404,
-                                        "uiAssertText": "Error: response status is 404",
-                                        "assertions": ["response.statusCode == 404"]
-                                      }
-                                    },
-                                    {
-                                      "name": "Отправка данных пользователя с телом запроса",
-                                      "target": {
-                                        "method": "POST",
-                                        "path": "/anything",
-                                        "uiPage": "/swagger-ui/index.html"
-                                      },
-                                      "inputData": {
-                                        "body": {
-                                          "username": "test_user"
-                                        }
-                                      },
-                                      "expected": {
-                                        "status": 200,
-                                        "uiAssertText": "Success",
-                                        "assertions": ["response.statusCode == 200"]
-                                      }
-                                    }
-                                  ]
-    
-                                  Дополнительные правила для качества тестов:
-                                    - если endpoint требует авторизацию, добавляй негативные кейсы ("Authorization": "auto" или невалидный токен);
-                                    - для ответов 4xx и 5xx обязательно создавай негативные кейсы, если это вытекает из спецификации.
-                                              
-    
+      "name": "...",
+      "target": {
+        "method": "...",
+        "path": "...", // Сюда ВСЕГДА пиши оригинальный путь из спецификации с маской (например, /tasks/{taskId}), а не подставленные значения!
+        "uiPage": "/swagger-ui/index.html"
+      },
+      "inputData": { 
+        "__auth": "none", // Обязательное поле: "none", "basic" или "bearer"
+        "body": { ... } // Сюда идет requestBody, если он есть. Если тела нет — вообще убирай этот ключ.
+        // ВСЕ ОСТАЛЬНЫЕ КЛЮЧИ ДОЛЖНЫ БЫТЬ ПЛОСКИМИ (ИМЕНА ПАРАМЕТРОВ ИЗ OPENAPI С СУЩЕСТВУЮЩИМИ ЗНАЧЕНИЯМИ)
+      },
+      "expected": {
+        "status": 200,
+        "assertions": ["..."]
+      }
+    }
+
+    КРИТИЧЕСКИЕ ПРАВИЛА:
+    1. Поле "uiPage" ВСЕГДА "/swagger-ui/index.html".
+    2. АВТОРИЗАЦИЯ ("__auth") — КРИТИЧЕСКОЕ ПРАВИЛО:
+     - Внимательно анализируй секцию "security" каждого эндпоинта. Если глобальная секция "security" объявлена в корне спецификации, она применяется ко ВСЕМ эндпоинтам, которые явно не переопределяют её через "security: []".
+     - ЕСЛИ доступно несколько типов авторизации (например, OAuth2 "petstore_auth" И "api_key") -> ты ОБЯЗАН игнорировать OAuth2 и выбирать простой "api_key" (устанавливая `"__auth": "bearer"` или `"__auth": "basic"` в зависимости от схемы). Никогда не генерируй сценарии для OAuth2!
+     - Если эндпоинт требует JWT Bearer Auth (BearerAuth) -> ты ОБЯЗАН установить `"__auth": "bearer"` для всех позитивных (успешных) тест-кейсов на этот эндпоинт.
+     - Если эндпоинт требует API Key или Basic Auth -> устанавливай `"__auth": "basic"`.
+     - Устанавливай `"__auth": "none"` ТОЛЬКО в двух случаях:
+       а) Эндпоинт действительно публичный (явно указано `security: []`).
+       б) Ты специально пишешь негативный тест-кейс для проверки безопасности (например, ожидаешь статус `401 Unauthorized` при запросе без токена).
+    3. ПРАВИЛО ПЛОСКОЙ СТРУКТУРЫ ДЛЯ ПАРАМЕТРОВ (КРИТИЧЕСКИ ВАЖНО):
+       - ЗАПРЕЩЕНО создавать ключи "pathParams", "queryParams" или "query"!
+       - Каждая path-переменная и каждый query-параметр должны быть ПЛОСКИМИ ключами первого уровня внутри "inputData".
+       - Имя ключа должно СТРОГО совпадать с именем параметра из OpenAPI (например, если параметр {taskId}, то ключ называется "taskId": "42").
+       - Если query-параметров несколько, делай для каждого свой отдельный ключ (например: "status": "todo", "priority": "medium").
+
+    Пример идеального плоского ответа (ДЛЯ ДЕМОНСТРАЦИИ СТРУКТУРЫ):
+    [
+      {
+        "name": "testGetTaskById",
+        "target": { "method": "GET", "path": "/tasks/{taskId}", "uiPage": "/swagger-ui/index.html" },
+        "inputData": { "__auth": "none", "taskId": "42" },
+        "expected": { "status": 200, "assertions": ["response.statusCode == 200"] }
+      },
+      {
+        "name": "testListTasksWithFilters",
+        "target": { "method": "GET", "path": "/tasks", "uiPage": "/swagger-ui/index.html" },
+        "inputData": { "__auth": "none", "status": "todo", "priority": "medium" },
+        "expected": { "status": 200, "assertions": ["response.statusCode == 200"] }
+      }
+    ]

@@ -102,7 +102,7 @@ public class Cli
         List<EndpointInfo> endpoints = parser.parseOpenApiSpec(rawOpenApi);
         System.out.println("Выберите режим работы");
         System.out.println("1. Однопоточный");
-        System.out.println("2. Многопоточный"); // На данный момент бесполезен
+        System.out.println("2. Многопоточный");
         String choice = scanner.nextLine().trim();
         List<TestCase> testCases;
         switch (choice)
@@ -113,7 +113,7 @@ public class Cli
                 break;
 
             case "2":
-                testCases = executor.generateParallel(endpoints, 2, testCasesGenerator::processor);
+                testCases = executor.generateParallel(endpoints, 20, testCasesGenerator::processor);
                 break;
 
             default:
