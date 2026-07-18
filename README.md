@@ -1,93 +1,131 @@
-# openapi-java-test-generator
+# OpenAPI Test Generator
 
+Проект создан как учебный прототип в рамках ознакомительной практики от ВУЗа в лаборатории компании YADRO “Технологии программирования Yadro-Политех”.
 
+CLI-приложение на Java и Spring Boot для автоматизации подготовки тестов REST API по OpenAPI/Swagger-спецификации.
 
-## Getting started
+Система загружает и анализирует описание API, формирует позитивные, негативные и граничные тестовые сценарии, а затем преобразует их в готовые артефакты для Postman, Selenium и Zephyr. Для смысловой генерации сценариев и исполняемого кода используется внешняя LLM.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Возможности
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- загрузка OpenAPI/Swagger-спецификации по URL;
+- работа с прямыми ссылками на JSON или YAML;
+- поиск спецификации на странице Swagger UI;
+- проверка резервных путей:
+  - `/swagger.json`;
+  - `/openapi.json`;
+  - `/v3/api-docs`;
+- разбор эндпоинтов, HTTP-методов, параметров, тел запросов, схем и ответов;
+- генерация позитивных, негативных и граничных тест-кейсов;
+- централизованное взаимодействие с внешней LLM;
+- экспорт тест-кейсов в CSV для Zephyr;
+- генерация Postman Collection;
+- генерация Selenium-тестов;
+- запуск основных сценариев через CLI;
+- логирование основных этапов работы;
+- модульное тестирование ключевых компонентов.
 
-## Add your files
+## Как это работает
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+```mermaid
+flowchart LR
+    A[config.yaml] --> B[CLI]
+    B --> C[Loader Service]
+    C --> D[OpenAPI / Swagger]
+    C --> E[Parser Service]
+    E --> F[Test Cases Generator]
+    F --> G[LLM Client]
+    G <--> H[External LLM]
+    F --> I[Zephyr Generator]
+    F --> J[Postman Generator]
+    F --> K[Selenium Generator]
+    G --> J
+    G --> K
+    I --> L[CSV]
+    J --> M[Postman Collection]
+    K --> N[Selenium Test Code]
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/openapi-test-generator/openapi-java-test-generator.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+1. CLI считывает параметры приложения и запускает выбранный сценарий.
+2. Loader Service получает OpenAPI-спецификацию по указанному URL.
+3. Parser Service преобразует исходное описание в структурированную модель API.
+4. Генератор формирует данные для позитивных, негативных и граничных проверок.
+5. LLM дополняет формальные сведения содержательными сценариями и кодом.
+6. Результат сохраняется в выбранном формате.
 
-* [Set up project integrations](https://gitlab.com/openapi-test-generator/openapi-java-test-generator/-/settings/integrations)
+## Архитектура
 
-## Collaborate with your team
+Приложение реализовано как модульный монолит на базе Spring Boot. Все компоненты работают внутри одного процесса и имеют четко разделенные зоны ответственности.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+| Компонент | Назначение |
+|---|---|
+| `CLI` | Точка входа и управление процессом генерации |
+| `Loader Service` | Загрузка спецификации и поиск доступного OpenAPI-описания |
+| `Parser Service` | Преобразование спецификации в структурированную модель |
+| `Test Cases Generator` | Подготовка позитивных, негативных и граничных сценариев |
+| `Prompt Builder` | Формирование инструкций и данных для LLM |
+| `LLM Client` | Единая точка взаимодействия с внешней языковой моделью |
+| `Zephyr Generator` | Экспорт тест-кейсов в CSV |
+| `Postman Generator` | Формирование коллекции запросов и тестовых скриптов |
+| `Selenium Generator` | Генерация файла с тестовым кодом |
 
-## Test and Deploy
+Такое разделение позволяет добавлять новые форматы экспорта без повторной реализации загрузки и разбора OpenAPI.
 
-Use the built-in continuous integration in GitLab.
+## Технологии
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+- Java
+- Spring Boot
+- Spring Shell
+- OpenAPI / Swagger
+- OpenAPIV3Parser
+- Maven
+- JUnit 5
+- Mockito
+- JaCoCo
+- Postman
+- Selenium
+- Zephyr
+- Docker
+- Git
 
-***
+## Конфигурация
 
-# Editing this README
+Основные параметры задаются в `config.yaml`:
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+- URL OpenAPI/Swagger-спецификации;
+- формат выходного артефакта;
+- базовый URL LLM API;
+- идентификатор модели;
+- параметры генерации;
+- настройки логирования.
 
-## Suggestions for a good README
+## Выходные артефакты
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### Zephyr CSV
 
-## Name
-Choose a self-explaining name for your project.
+Содержит данные для ручного импорта тест-кейсов:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- название сценария;
+- предусловия;
+- шаги;
+- тестовые данные;
+- ожидаемый результат.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Postman Collection
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Содержит:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+- HTTP-методы;
+- URL с переменной `{{baseUrl}}`;
+- параметры и заголовки;
+- тело запроса;
+- тестовые скрипты для проверки статуса и полей ответа.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### Selenium Tests
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Содержит сгенерированный код UI-тестов на основе подготовленных тест-кейсов. Для создания программного кода используется дополнительный запрос к LLM.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Статус проекта
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Рабочий учебный прототип. Проект автоматизирует основные этапы подготовки тестов REST API и может использоваться как основа для дальнейшего развития.
